@@ -3,7 +3,6 @@
 #include <iostream>
 #include <algorithm>
 #include <map>
-#include <cmath>
 using namespace std;
 
 // 7번째 턴에서 이상해
@@ -282,23 +281,24 @@ int main() {
             // 다 움직인 후에 다시 좌표 채워주기
             board[santa[i][0]][santa[i][1]] = i;
             //cout << i << "번째 산타 위치 : " << santa[i][0] << " , " << santa[i][1] << endl;
+            for (int i = 1; i <= P; i++)
+            {
+                if (rudol.first == santa[i][0] && rudol.second == santa[i][1])
+                {
+                    //cout << i << "번쨰 산타와 충돌" << endl;
+                    // 충돌하면, 점수 업데이트하고
+                    score[i] += D;
+                    // 반대 방향으로 D만큼 밀려나기
+                    move(i, (santa_dir[i]+2) % 4 , D);
+                    // 기절시키기
+                    if (isSanta[i])
+                        isFaint[i] = 1;
+                }
+            }
         }
 //        Print();
         // 산타가 선인 충돌 체크
-        for (int i = 1; i <= P; i++)
-        {
-            if (rudol.first == santa[i][0] && rudol.second == santa[i][1])
-            {
-                //cout << i << "번쨰 산타와 충돌" << endl;
-                // 충돌하면, 점수 업데이트하고
-                score[i] += D;
-                // 반대 방향으로 D만큼 밀려나기
-                move(i, (santa_dir[i]+2) % 4 , D);
-                // 기절시키기
-                if (isSanta[i])
-                    isFaint[i] = 1;
-            }
-        }
+
         // 턴 종료할 때 탈락하지 않은 산타에게 1점씩 주기
         for (int i = 1; i <= P; i++)
         {
