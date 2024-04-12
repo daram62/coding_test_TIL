@@ -6,7 +6,6 @@
 #include <cmath>
 using namespace std;
 
-// 7번째 턴에서 이상해
 int N, M; // 게임판 크기, 턴 횟수
 int P, C, D; // 산타 수, 루돌프 힘, 산타 힘 
 int score[32]; // 산타 점수 저장 배열
@@ -22,84 +21,15 @@ int isFaint[32]; // 산타 기절 여부
 int dx[8] = {0,1,0,-1,-1,-1,1,1};
 int dy[8] = {-1,0,1,0,1,-1,-1,1};
 
-void debug() {
-    cout << "루돌프 위치 " << rudol.first << ", " << rudol.second << endl;
-    for (int i = 1; i <= P; i++)
-    {
-        cout << i << "번째 산타 위치 " << santa[i][0] << ", " << santa[i][1] << endl;
-    }
-}
 
-void Print() {
-    for (int i = 1; i <= N; i++)
-    {
-        for (int j = 1; j <= N; j++)
-        {
-            cout << board[i][j] << " ";
-        }
-        cout << endl;
-    }
-}
-
-void interaction(int index, int direct) {
-    for (int i = 1; i <= P; i++)
-    {
-        if (i == index)
-            continue;
-        if (santa[i][0] == santa[index][0] && santa[i][1] == santa[index][1])
-        {
-            //cout << i << "번째 산타와 상호작용 발생" << endl;
-            santa[i][0] += dx[direct];
-            santa[i][1] += dy[direct];
-            if (santa[i][0] < 1 || santa[i][0] > N || santa[i][1] < 1 || santa[i][1] > N)
-            {
-                //cout << i << "번째 산타 탈락" << endl;
-                isSanta[i] = false;
-            }
-            else 
-            {
-                board[santa[i][0]][santa[i][1]] = true;
-                interaction(i, direct);
-            }
-                
-        }
-    }
-}
-
+// 디버그 출력 함수
+void Print();
+// 상호작용 함수
+void interaction(int index, int direct);
 // 몇번 산타가 어디로, 얼만큼 이동하는지 
-void move(int index, int direct, int num)
-{
-    // 기존 좌표 비워주고
-    board[santa[index][0]][santa[index][1]] = 0;
-    
-    // 방향 따라서 이동시키기
-    santa[index][0] += dx[direct] * num;
-    santa[index][1] += dy[direct] * num;
-
-    // 다 밀려난 후 게임판 밖인지 체크
-    if (santa[index][0] < 1 || santa[index][0] > N || santa[index][1] < 1 || santa[index][1] > N)
-    { // 게임판 밖이면 
-        //cout << index << "번째 산타 탈락" << endl;
-        isSanta[index] = false;
-    }        
-    // 산타 위치 게임판에 업데이트
-    else 
-    {
-        board[santa[index][0]][santa[index][1]] = index;
-        //cout << index << "번째 산타 이동 -> " << santa[index][0] << ", " << santa[index][1] << endl;
-    }
-    // 상호작용 체크
-    interaction(index, direct);
-}
-
-bool check() {
-    bool allfail = true;
-    for (int i = 1; i <= P; i++) {
-        if (isSanta[i] == true)
-            allfail = false;
-    }
-    return allfail;
-}
+void move(int index, int direct, int num);
+// 모든 산타 탈락 여부 체크 함수
+bool check();
 
 int main() {
     ios::sync_with_stdio(false);
@@ -111,23 +41,24 @@ int main() {
     cin >> rudol.first >> rudol.second;
     board[rudol.first][rudol.second] = -1;
 
+    // 산타 위치 입력받기
     for (int i = 1; i <= P; i++)
     {
         int num, r, c;
-        cin >> num;
-        cin >> r >> c;
+        cin >> num >> r >> c;
         santa[num][0] = r;
         santa[num][1] = c;
-        board[r][c] = num;
-        isSanta[num] = true;
+        board[r][c] = num; // 산타 위치 보드에 표시
+        isSanta[num] = true; // 산타 존재 여부 표시
     }
-    //debug();
 
+    // 턴마다 이동 시작
     for (int T = 1; T <= M; T++)
     {
-        if (check())
+        if (check()) // 모든 산타가 탈락했으면 게임 끝내기
             break;
-        // 1. 루돌프 이동
+
+        // 루돌프 이동
         // 거리 계산해서 목표 산타 정하기
         int min_idx;
         int min_dis = 100000;
@@ -152,17 +83,12 @@ int main() {
             {
                 // r 좌표가 더 크다면 -> 업데이트
                 if (santa[i][0] > santa[min_idx][0])
-                {
                     min_idx = i;
-                }
                 // r 좌표 동일하고, c 좌표가 더 크다면
                 else if (santa[i][0] == santa[min_idx][0] && santa[i][1] > santa[min_idx][1])
-                {
                     min_idx = i;
-                }
             }
         } 
-        //cout << "the closest santa is " << min_idx << " [" << santa[min_idx][0] << ", " << santa[min_idx][1] << "]" << endl;
         // 목표 산타 정했으면 이동 ㄱㄱ
         int ru_dir = -1; 
         board[rudol.first][rudol.second] = false;
@@ -179,7 +105,7 @@ int main() {
                 ru_dir = 0;
             }
         }
-        else if (rudol.second == santa[min_idx][1])
+        else if (rudol.second == santa[min_idx][1]) // south or north
         {
             if (rudol.first < santa[min_idx][0]) // south move
             {
@@ -220,11 +146,18 @@ int main() {
             rudol.second ++;
             ru_dir = 7;
         }
-        //cout << "rudolf is " << rudol.first << ", " << rudol.second << endl;
+        // 이동 후 루돌프 위치 다시 표시
         board[rudol.first][rudol.second] = -1;
 
-        //Print();
+        // 루돌프 충돌 체크
+        if (rudol.first == santa[min_idx][0] && rudol.second == santa[min_idx][1])
+        {
+            isFaint[min_idx] = 1;
+            score[min_idx] += C;
+            move(min_idx, ru_dir, C);
+        }
 
+        /*
         // 루돌프 충돌 체크
         for (int i = 1; i <= P; i++)
         {
@@ -233,12 +166,12 @@ int main() {
                 continue;
             if (rudol.first == santa[i][0] && rudol.second == santa[i][1])
             {
-                //cout << i << " crash!" << endl;
                 isFaint[i] = 1;
                 score[i] += C;
                 move(i, ru_dir, C);
             }
         }
+        */
         // 산타 이동
         int santa_dir[32] = {0,};
         for (int i = 1; i <= P; i++)
@@ -328,4 +261,76 @@ int main() {
         cout << score[i] << " ";
     }
     return 0;
+}
+
+// 디버그 출력 함수
+void Print() {
+    for (int i = 1; i <= N; i++)
+    {
+        for (int j = 1; j <= N; j++)
+        {
+            cout << board[i][j] << " ";
+        }
+        cout << endl;
+    }
+}
+// 몇번 산타가 어디로, 얼만큼 이동하는지 
+void move(int index, int direct, int num)
+{
+    // 기존 좌표 비워주고
+    board[santa[index][0]][santa[index][1]] = 0;
+    
+    // 방향 따라서 이동시키기
+    santa[index][0] += dx[direct] * num;
+    santa[index][1] += dy[direct] * num;
+
+    // 다 밀려난 후 게임판 밖인지 체크
+    if (santa[index][0] < 1 || santa[index][0] > N || santa[index][1] < 1 || santa[index][1] > N)
+    { // 게임판 밖이면 
+        //cout << index << "번째 산타 탈락" << endl;
+        isSanta[index] = false;
+    }        
+    // 산타 위치 게임판에 업데이트
+    else 
+    {
+        board[santa[index][0]][santa[index][1]] = index;
+        //cout << index << "번째 산타 이동 -> " << santa[index][0] << ", " << santa[index][1] << endl;
+    }
+    // 상호작용 체크
+    interaction(index, direct);
+}
+
+// 상호작용 함수
+void interaction(int index, int direct) {
+    for (int i = 1; i <= P; i++)
+    {
+        if (i == index)
+            continue;
+        if (santa[i][0] == santa[index][0] && santa[i][1] == santa[index][1])
+        {
+            //cout << i << "번째 산타와 상호작용 발생" << endl;
+            santa[i][0] += dx[direct];
+            santa[i][1] += dy[direct];
+            if (santa[i][0] < 1 || santa[i][0] > N || santa[i][1] < 1 || santa[i][1] > N)
+            {
+                //cout << i << "번째 산타 탈락" << endl;
+                isSanta[i] = false;
+            }
+            else 
+            {
+                board[santa[i][0]][santa[i][1]] = true;
+                interaction(i, direct);
+            }
+        }
+    }
+}
+
+// 모든 산타 탈락 여부 체크 함수
+bool check() {
+    bool allfail = true;
+    for (int i = 1; i <= P; i++) {
+        if (isSanta[i] == true)
+            allfail = false;
+    }
+    return allfail;
 }
