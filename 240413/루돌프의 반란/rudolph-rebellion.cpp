@@ -157,21 +157,6 @@ int main() {
             move(min_idx, ru_dir, C);
         }
 
-        /*
-        // 루돌프 충돌 체크
-        for (int i = 1; i <= P; i++)
-        {
-            // 탈락한 산타는 바로 넘기기
-            if (!isSanta[i])
-                continue;
-            if (rudol.first == santa[i][0] && rudol.second == santa[i][1])
-            {
-                isFaint[i] = 1;
-                score[i] += C;
-                move(i, ru_dir, C);
-            }
-        }
-        */
         // 산타 이동
         int santa_dir[32] = {0,};
         for (int i = 1; i <= P; i++)
@@ -181,8 +166,7 @@ int main() {
            
             // 기존 거리 체크
             int min_distance = pow(rudol.first - santa[i][0], 2) + pow(rudol.second - santa[i][1], 2);
-            //cout << i << " 기존 거리 : " << min_distance << endl;
-
+            
             // 움직일거니까 좌표 비워주고
             board[santa[i][0]][santa[i][1]] = 0;
             santa_dir[i] = -1;
@@ -193,19 +177,19 @@ int main() {
                 int r = santa[i][0] + dx[j];
                 int c = santa[i][1] + dy[j];
 
+                // 움직인 후 범위 벗어나면 패스
                 if (r < 1 || r > N || c < 1 || c > N)
                     continue;
-                //cout << "r,c -> " << r << " , " << c << endl;
                 int distance = pow(rudol.first - r, 2) + pow(rudol.second - c, 2);
                 if (distance <= min_distance && board[r][c] <= 0)
                 {
                     min_distance = distance;
-                    //cout << j << " update " << endl; 
                     nr = r;
                     nc = c;
                     ndir = j;
                 }
             }
+            // 0이 아니면 일단 움직일 곳 찾아서 업데이트 했다는 뜻
             if (nr != 0 && nc != 0)
             {
                 santa[i][0] = nr;
@@ -214,12 +198,10 @@ int main() {
             }
             // 다 움직인 후에 다시 좌표 채워주기
             board[santa[i][0]][santa[i][1]] = i;
-            //cout << i << "번째 산타 위치 : " << santa[i][0] << " , " << santa[i][1] << endl;
-            for (int i = 1; i <= P; i++)
-            {
-                if (rudol.first == santa[i][0] && rudol.second == santa[i][1])
+            
+            // 산타가 선인 충돌 체크
+            if (rudol.first == santa[i][0] && rudol.second == santa[i][1])
                 {
-                    //cout << i << "번쨰 산타와 충돌" << endl;
                     // 충돌하면, 점수 업데이트하고
                     score[i] += D;
                     // 반대 방향으로 D만큼 밀려나기
@@ -228,21 +210,15 @@ int main() {
                     if (isSanta[i])
                         isFaint[i] = 1;
                 }
-            }
         }
-//        Print();
-        // 산타가 선인 충돌 체크
 
         // 턴 종료할 때 탈락하지 않은 산타에게 1점씩 주기
         for (int i = 1; i <= P; i++)
         {
             if (isSanta[i])
                 score[i] ++;
-            //cout << i << "번째 산타 점수 : " << score[i] << endl;
         }
         board[rudol.first][rudol.second] = -1;
-        //cout << T << "번째 턴 후 위치 상태" << endl;
-        //Print();
 
         if (check())
             break;
@@ -255,7 +231,6 @@ int main() {
                 isFaint[i] ++;
         }
     }
-    //cout << "result -> " << endl;
     for (int i = 1; i <= P; i++)
     {
         cout << score[i] << " ";
