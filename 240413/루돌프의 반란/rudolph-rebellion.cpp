@@ -3,6 +3,7 @@
 #include <iostream>
 #include <algorithm>
 #include <map>
+#include <cmath>
 using namespace std;
 
 // 7번째 턴에서 이상해
