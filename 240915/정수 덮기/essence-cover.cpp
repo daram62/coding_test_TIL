@@ -17,10 +17,9 @@ int main() {
 
     // 정렬
     sort(term, term+n);
-
     term[n-1] += 1;
 
-    int cover = term[0], cnt = 1;
+    int cover = term[0] + l, cnt = 1;
     
     for (int i = 1; i < n; i++) {
         if (cover < term[i]) {
