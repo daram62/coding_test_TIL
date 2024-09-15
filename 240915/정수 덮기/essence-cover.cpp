@@ -5,7 +5,6 @@ using namespace std;
 int main() {
 
     int n, l;
-    
     cin >> n >> l;
 
     int term[n];
@@ -17,15 +16,14 @@ int main() {
 
     // 정렬
     sort(term, term+n);
-    term[n-1] += 1;
-
-    int cover = term[0] + l, cnt = 1;
+    
+    int cover = term[0] - 0.5 + l;
+    int cnt = 1;
     
     for (int i = 1; i < n; i++) {
-        if (cover < term[i]) {
-            cover = term[i];
+        if (cover < term[i] + 0.5) {
             cnt ++;
-            cover += l;
+            cover = term[i] - 0.5 + l;
         }
     }
 
