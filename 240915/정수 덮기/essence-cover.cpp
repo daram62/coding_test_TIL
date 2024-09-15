@@ -20,16 +20,14 @@ int main() {
 
     term[n-1] += 1;
 
-    int start = 0, cnt = 0;
+    int cover = term[0], cnt = 1;
     
-    for (int i = 0; i < n; i++) {
-
-        if (start < term[i]) {
-            start = term[i];
+    for (int i = 1; i < n; i++) {
+        if (cover < term[i]) {
+            cover = term[i];
             cnt ++;
-            start += l;
+            cover += l;
         }
-
     }
 
     cout << cnt;
