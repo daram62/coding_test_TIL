@@ -23,11 +23,13 @@ int main() {
     int start = 0, cnt = 0;
     
     for (int i = 0; i < n; i++) {
+
         if (start < term[i]) {
             start = term[i];
             cnt ++;
-            start += 3;
+            start += l;
         }
+
     }
 
     cout << cnt;
