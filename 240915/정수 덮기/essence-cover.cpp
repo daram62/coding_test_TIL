@@ -9,9 +9,14 @@ int main() {
 
     int term[n];
 
+    // 구간 중심점 입력
     for (int i = 0; i < n; i++) {
         cin >> term[i];
     }    
+
+    // 정렬
+    sort(term, term+n);
+
     term[n-1] += 1;
 
     int start = 0, cnt = 0;
