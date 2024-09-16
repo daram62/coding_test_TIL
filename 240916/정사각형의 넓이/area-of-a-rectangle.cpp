@@ -6,12 +6,12 @@ int main() {
     int n, area;
 
     cin >> n;
-
+    
+    area = n * n;
+    cout << area;
+    
     if (n < 5)
         cout << "tiny";
-    else {
-        area = n * n;
-        cout << area;
-    }
+    
     return 0;
 }
