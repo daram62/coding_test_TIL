@@ -4,30 +4,28 @@
 #include <functional>
 
 using namespace std;
-#define MAX_NUM 100000
 
 int main() {
-
-    int n, num;
-    int sum, score = 0; 
+    long long int n, num;
+    long long int sum, score = 0; 
     cin >> n;
 
     priority_queue<int, vector<int>, greater<int>> minHeap;
 
+    // 숫자 입력
     for (int i = 0; i < n; i++) {
         cin >> num;
         minHeap.push(num);
     }
 
-    int fir, sec;
-
-    for (int i = 0; i < n-1; i++) {
-        fir = minHeap.top();
+    // 총 n-1번 합치는 작업을 수행
+    for (int i = 0; i < n - 1; i++) {
+        int fir = minHeap.top();
         minHeap.pop();
 
-        sec = minHeap.top();
+        int sec = minHeap.top();
         minHeap.pop();
-        
+
         sum = fir + sec;
         score += sum;
 
