@@ -9,10 +9,10 @@ int main() {
     cin >> age[0] >> gender[0];
     cin >> age[1] >> gender[1];
 
-    if (age[0] >= 19 || gender[0] == 'M'){
+    if (age[0] >= 19 && gender[0] == 'M'){
         cout << 1;
     }
-    else if (age[1] >= 19 || gender[1] == 'M') {
+    else if (age[1] >= 19 && gender[1] == 'M') {
         cout << 1;
     }
     else {
