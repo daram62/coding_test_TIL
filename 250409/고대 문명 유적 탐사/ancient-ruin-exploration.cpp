@@ -124,7 +124,7 @@ int rotate(int x, int y, int direction) {
         for (int i = 0; i < 3; i++)
             for (int j = 0; j < 3; j++)
                 rotated[j][2 - i] = block[i][j];
-            memcpy(block, rotated, sizeof(rotated));
+        memcpy(block, rotated, sizeof(rotated));
         }
 
     // temp_map에 덮어쓰기
@@ -189,12 +189,13 @@ void real_rotate(int x, int y, int direction) {
         for (int j = 0; j < 3; j++)
             block[i][j] = map[x - 1 + i][y - 1 + j];
 
-    // 회전 방향대로 넣기
     for (int rot = 0; rot <= direction; rot++) {
         for (int i = 0; i < 3; i++)
             for (int j = 0; j < 3; j++)
                 rotated[j][2 - i] = block[i][j];
+        memcpy(block, rotated, sizeof(rotated));
     }
+        
 
     // map에 덮어쓰기
     for (int i = 0; i < 3; i++)
