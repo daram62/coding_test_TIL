@@ -59,8 +59,8 @@ int main() {
         int point_angle = 0; // 회전 각도
 
         for (int k = 0; k < 3; k++) { // 각도 우선 탐사
-            for (int i = 2; i < 5; i++) {
-                for (int j = 2; j < 5; j++) {
+            for (int j = 2; j < 5; j++) {
+                for (int i = 2; i < 5; i++) {
                     // cout << "i: " << i << " j: " << j << " 각도: " << (k+1)*90 << "\n";
                     int temp = rotate(i, j, k);
                     // cout << "count: " << temp << "\n";
@@ -86,15 +86,17 @@ int main() {
         // cout << "시작 가치: " << result << "\n";
 
         // 최종 회전 좌표, 각도 따라 이동
-        // cout << "최종 회전 맵" << endl;
+        //cout << "최종 회전 맵" << endl;
         real_rotate(point.first, point.second, point_angle);
-        
+
         // 2. 유물 획득
         // 유물 1차 획득 다시 진행
         while(true) {
+            //Print();
             int score = real_Reward();
             if (score == 0)
                 break;
+            //cout << "획득 점수" << score << endl;
             final += score;
             fillup_Empty();
         }
