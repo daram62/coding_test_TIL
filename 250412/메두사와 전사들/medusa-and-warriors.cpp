@@ -2,6 +2,7 @@
 #include <queue>
 #include <cmath>
 #include <cstring>
+#include <tuple>
 using namespace std;
 
 int N, M;
