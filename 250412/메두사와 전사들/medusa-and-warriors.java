@@ -1,392 +1,312 @@
-import java.util.*;
-import java.io.*;
+#include <bits/stdc++.h>
+using namespace std;
+typedef long long ll;
+typedef pair<int, int> pii;
+void fastIO() {
+  ios_base::sync_with_stdio(0);
+  cin.tie(NULL);
+  cout.tie(NULL);
+}
 
-public class Main {
-    private static int N, M;
-    private static int[][] map;
+typedef struct _Warrior
+{
+  int y, x, freeze, live;
+}Warrior;
 
-    private static boolean[][][] medusaArea;
-    private static int[][] warriorMap;
-    private static int[][] nxtWarriorMap;
+vector<Warrior> warrior_vec;
+int park_dist[54][54]; // medusa에서 park까지의 최단거리
+int visited[4][54][54];
 
-    private static int[] medusa = new int[2];
-    private static int[] park = new int[2];
+// 북쪽이 0, 이후 시계방향으로 1,2, ... 7
+const int dy[] = {-1, -1, 0, 1, 1, 1, 0, -1};
+const int dx[] = {0, 1, 1, 1, 0, -1, -1, -1};
 
-    private static Queue<int[]> warriors = new ArrayDeque<>();
+// (상, 하, 좌, 우) 에 대한 탐색방향
+// ex 상(idx == 0) 일 경우 탐색방향은 
+// (7, 0, 1) <- (북서, 북, 북동)
+vector<vector<int>> dirs = {
+  {7, 0, 1}, // 기울기 -> (양수, 0또는 무한대, 음수)
+  {3, 4, 5}, // 기울기 -> (양수, 0또는 무한대, 음수)
+  {7, 6, 5}, // 기울기 -> (양수, 0또는 무한대, 음수)
+  {3, 2, 1}  // 기울기 -> (양수, 0또는 무한대, 음수)
+};
 
-    private static int[] dr = {-1, 1, 0, 0};
-    private static int[] dc = {0, 0, -1, 1};
-    public static void main(String[] args) throws IOException {
-        input();
+int n,m;
+int my, mx, py, px; // medusa, park
+int road[54][54];
+int warrior_land[54][54];
 
-        StringBuilder sb = new StringBuilder();
-        // 메두사의 위치가 park 면 종료
-        
-        boolean[][] visit = new boolean[N][N];
+typedef struct _Info
+{
+  int warrior_move_sum;
+  int warrior_freezed;
+  int warrior_attack_succeed;
+} Info;
 
-        while(medusa[0] != park[0] || medusa[1] != park[1]){
-            visit[medusa[0]][medusa[1]] = true;
-            // 메두사 이동
-            // 도로따라 이동
-            if(!step1(sb, visit)) break;
+Info turn_info;
 
-            // 메두사 시선
-            // 상하좌우 중, 가장 적을 많이 없앨 수 있는 방향을 쳐다봄, 90도 시야각, 나보다 앞에 선 전사가 있었으면 패스
-            int[] step2Info = step2(); // killCount, 석화 방향
-            int medusaKillCount = step2Info[0];
-            int medusaAreaDir = step2Info[1];
+bool is_out(int y, int x)
+{
+  return (y < 0 || y >= n || x < 0 || x >= n);
+}
 
-            // 전사 이동 
-            int warriorMove = step3_1(medusaAreaDir);
-            warriorMove += step3_2(medusaAreaDir);
-            
-            // 전사의 공격
-            // 메두사와 같은 칸 도달하면 소멸
-            int attackCount = step4();
-            
-            sb.append(warriorMove).append(" ").append(medusaKillCount).append(" ").append(attackCount);
-            sb.append("\n");
-        }
+int calc_dist()
+{
+  memset(park_dist, -1, sizeof(park_dist));
+  queue <pii> q;
+  q.push({py, px});
+  park_dist[py][px] = 0;
 
-        System.out.println(sb.toString());
+  while(q.size())
+  {
+    pii here = q.front(); q.pop();
+    int y = here.first;
+    int x = here.second;
+
+    if (y == my && x == mx) return park_dist[y][x];
+    for (int i = 0; i < 8; i += 2)
+    {
+      int ny = y + dy[i];
+      int nx = x + dx[i];
+
+      if (is_out(ny, nx) || road[ny][nx] == 1) continue;
+
+      if (park_dist[ny][nx] == -1)
+      {
+        park_dist[ny][nx] = park_dist[y][x] + 1;
+        q.push({ny, nx});
+      }
     }
-    
-    private static boolean step1(StringBuilder sb, boolean[][] visit){
-        PriorityQueue<int[]> pq = new PriorityQueue<>((o1, o2)->{
-            if(o1[0] == o2[0]) return o1[1] - o2[1];
-            return o1[0] - o2[0];
-        });
+  }
+  return -1;
+}
 
-        for(int i = 0; i < 4; i++){
-            int nr = medusa[0] + dr[i];
-            int nc = medusa[1] + dc[i];
-            if(nr < 0 || nr >= N || nc < 0 || nc >= N || visit[nr][nc] || map[nr][nc] == 1) continue;
-            int dist = -1;
+vector<pii> path;
 
-            PriorityQueue<int[]> bfsPQ = new PriorityQueue<>((o1, o2) -> o1[0] - o2[0]);
-            bfsPQ.add(new int[]{0, nr, nc});
+bool trace(int y, int x) {
+  if (y == py && x == px) return true;
 
-            boolean[][] bfsVisit = new boolean[N][N];
-            bfsVisit[nr][nc] = true;
-            while(!bfsPQ.isEmpty()){
-                int[] p = bfsPQ.poll();
-                if(p[1] == park[0] && p[2] == park[1]){
-                    dist = p[0];
-                    break;
-                }
-
-                for(int j = 0; j < 4; j++){
-                    int nnr = p[1] + dr[j];
-                    int nnc = p[2] + dc[j];
-                    if(nnr < 0 || nnr >= N || nnc < 0 || nnc >= N || map[nnr][nnc] == 1 || bfsVisit[nnr][nnc]) continue;
-                    bfsVisit[nnr][nnc] = true;
-                    bfsPQ.add(new int[]{p[0] + 1, nnr, nnc});
-                }
-            }
-
-            if(dist == -1) continue;
-            pq.add(new int[]{dist, i, nr, nc});
-        }
-
-        if(pq.isEmpty()){
-            sb.delete(0, sb.length());
-            sb.append("-1");
-            return false;
-        }
-
-        int[] item = pq.poll();
-        medusa[0] = item[2];
-        medusa[1] = item[3];
-        
-        if(medusa[0] == park[0] && medusa[1] == park[1]){
-            sb.append(0);
-            return false;
-        }
-
-        if(warriorMap[medusa[0]][medusa[1]] > 0){
-            int len = warriors.size();
-            for(int i = 0; i < len; i++){
-                int[] pos = warriors.poll();
-                if(pos[0] == medusa[0] && pos[1] == medusa[1]) continue;
-                warriors.add(pos);
-            }
-            warriorMap[medusa[0]][medusa[1]] = 0;
-        }
-
-        return true;
+  for (int i = 0; i < 4; i++)
+  {
+    int dir = dirs[i][1];
+    int ny = y + dy[dir];
+    int nx = x + dx[dir];
+    if (is_out(ny, nx) || park_dist[ny][nx] == -1) continue;
+    if (park_dist[y][x] == park_dist[ny][nx] + 1)
+    {
+      path.push_back({ny, nx});
+      if (trace(ny, nx)) return true;
+      path.pop_back();
     }
+  }
+  
+  return false;
+}
 
-    private static int[] step2(){
-        PriorityQueue<int[]> pq = new PriorityQueue<>((o1, o2)->{
-            if(o1[0] == o2[0]) return o1[1] - o2[1];
-            return o2[0] - o1[0];
-        });
+void medusa_move(int turn)
+{
+  tie(my, mx) = path[turn];
+  for (Warrior& w : warrior_vec)
+  {
+    if (w.live == 0) continue;
+    if (w.y == my && w.x == mx)
+    {
+      w.live = 0;
+      warrior_land[w.y][w.x] -= 1;
+    }
+  }
+  return;
+}
 
-        medusaArea = new boolean[4][N][N];
-        for(int i = 0; i < 4; i++){
-            boolean[] rock = new boolean[N];
-            int killCount = 0;
-
-            for(int j = 1; j < N; j++){
-                int r = medusa[0] + (j * dr[i]);
-                int c = medusa[1] + (j * dc[i]);
-                if(r < 0 || r >= N || c < 0 || c >= N) break;
-
-                medusaArea[i][r][c] = true;
-                if(warriorMap[r][c] > 0){
-                    if(i <= 1) rock[c] = true;
-                    else rock[r] = true;
-
-                    killCount += warriorMap[r][c];
-                    break;
-                }
+int max_freeze_dir;
+void medusa_look()
+{
+  memset(visited, 0, sizeof(visited));
+  int max_freeze_cnt = 0;
+  for (int i = 0; i < 4; i++)
+  {
+    vector<int> look_dir = dirs[i];
+    queue<pii> q;
+    int freeze_cnt = 0;
+    q.push({my, mx});
+    while(q.size())
+    {
+      pii here = q.front(); q.pop();
+      int y = here.first;
+      int x = here.second;
+      for (int dir : look_dir)
+      {
+        int ny = y + dy[dir];
+        int nx = x + dx[dir];
+        if (is_out(ny, nx) || visited[i][ny][nx]) continue;
+        if (warrior_land[ny][nx])
+        {
+          freeze_cnt += warrior_land[ny][nx];
+          visited[i][ny][nx] = 1;
+          queue<pii> warrior_q;
+          vector<int> warrior_dir;
+          if (ny == my || nx == mx)
+          {
+            warrior_dir.push_back(look_dir[1]);
+          }
+          else
+          {
+            if ( (double)(ny - my) / (double)(nx - mx) > 0)
+            {
+              warrior_dir.push_back(look_dir[0]);
+              warrior_dir.push_back(look_dir[1]);
             }
-            
-            int[] clone = medusa.clone();
-            while(0 <= clone[0] && clone[0] < N && 0 <= clone[1] && clone[1] < N){
-                boolean leftCHK = false, rightCHK = false;
-
-                for(int j = 1; j <= N && (!leftCHK || !rightCHK); j++){
-                    // 상 or 하, r좌표는 기존값 * j / c좌표는 -j, +j
-                    // 좌 or 우, r좌표는 -j, +j / c좌표는 기존값 * j
-                    int r = i <= 1 ? clone[0] + (dr[i] * j) : clone[0];
-                    int c = i <= 1 ? clone[1] : clone[1] + (dc[i] * j);
-
-                    if(i <= 1 && r < 0 || r >= N) break;
-                    if(i > 1 && c < 0 || c >= N) break;
-
-                    if(i <= 1){
-                        if(!leftCHK && 0 <= c - j){
-                            if(rock[c - j]) leftCHK = true;
-                            else{
-                                medusaArea[i][r][c - j] = true;
-                                if(warriorMap[r][c - j] > 0){
-                                    rock[c - j] = true;
-                                    leftCHK = true;
-                                    killCount += warriorMap[r][c - j];
-                                }
-                            }
-                        }
-
-                        if(!rightCHK && c + j < N){
-                            if(rock[c + j]) rightCHK = true;
-                            else{
-                                medusaArea[i][r][c + j] = true;
-                                if(warriorMap[r][c + j] > 0){
-                                    rock[c + j] = true;
-                                    rightCHK = true;
-                                    killCount += warriorMap[r][c + j];
-                                }
-                            }
-                        }
-
-                    }else{
-                        if(!leftCHK && 0 <= r - j){
-                            if(rock[r - j]) leftCHK = true;
-                            else{
-                                medusaArea[i][r - j][c] = true;
-                                if(warriorMap[r - j][c] > 0){
-                                    rock[r - j] = true;
-                                    leftCHK = true;
-                                    killCount += warriorMap[r - j][c];
-                                }
-                            }
-                        }
-
-                        if(!rightCHK && r + j < N){
-                            if(rock[r + j]) rightCHK = true;
-                            else{
-                                medusaArea[i][r + j][c] = true;
-                                if(warriorMap[r + j][c] > 0){
-                                    rock[r + j] = true;
-                                    rightCHK = true;
-                                    killCount += warriorMap[r + j][c];
-                                }
-                            }
-                        }
-                    }
-                }
-                clone[0] += dr[i];
-                clone[1] += dc[i];
+            else
+            {
+              warrior_dir.push_back(look_dir[1]);
+              warrior_dir.push_back(look_dir[2]);
             }
-            
-            pq.add(new int[]{killCount, i});
+          }
+          warrior_q.push({ny, nx});
+          while(warrior_q.size())
+          { 
+            pii here = warrior_q.front(); warrior_q.pop();
+            int y = here.first;
+            int x = here.second;
+            for (int dir : warrior_dir)
+            {
+              int ny = y + dy[dir];
+              int nx = x + dx[dir];
+              if (is_out(ny, nx) || visited[i][ny][nx]) continue;
+              visited[i][ny][nx] = 100;
+              warrior_q.push({ny, nx});
+            }
+          }
         }
-
-        int[] result = pq.poll();
-
-        for(int i = 0; i < N; i++){
-            for(int j = 0; j < N; j++){
-                if(medusaArea[result[1]][i][j] && warriorMap[i][j] > 0){
-                    nxtWarriorMap[i][j] = warriorMap[i][j];
-                    warriorMap[i][j] = 0;
-                }
-            }
+        else
+        {
+          q.push({ny, nx});
+          visited[i][ny][nx] = 1;
         }
-        return result;
+      }
     }
 
-    private static int step3_1(int medusaDir){
-        int sum = 0;
-
-        int len = warriors.size();
-        for(int i = 0; i < len; i++){
-            int[] pos = warriors.poll();
-
-            if(warriorMap[pos[0]][pos[1]] == 0) continue;
-            if(medusa[0] == pos[0] && medusa[1] == pos[1]){
-                warriors.add(pos);
-                continue;
-            }
-
-            int originDist = getDistFromTo(pos, medusa);
-            warriorMap[pos[0]][pos[1]]--;
-
-            PriorityQueue<int[]> pq = new PriorityQueue<>((o1, o2) -> {
-                if(o1[0] == o2[0]) return o1[1] - o2[1];
-                return o1[0] - o2[0];
-            });
-
-            for(int j = 0; j < 4; j++){
-                int nr = pos[0] + dr[j];
-                int nc = pos[1] + dc[j];
-                if(nr < 0 || nr >= N || nc < 0 || nc >= N || medusaArea[medusaDir][nr][nc]) continue;
-                int dist = getDistFromTo(new int[]{nr, nc}, medusa); 
-                if(originDist < dist) continue;
-
-                pq.add(new int[]{dist, j, nr, nc});
-            }
-            
-            if(pq.isEmpty()){
-                warriorMap[pos[0]][pos[1]]++;
-                warriors.add(pos);
-                continue;
-            }
-
-            int[] result = pq.poll();
-            sum++;
-            warriors.add(new int[]{result[2], result[3]});
-
-            warriorMap[result[2]][result[3]]++;
-        }
-
-        return sum;
+    if (max_freeze_cnt < freeze_cnt)
+    {
+      max_freeze_cnt = freeze_cnt;
+      max_freeze_dir = i;
     }
+  }
 
-    private static int step3_2(int medusaDir){
-        int sum = 0;
-
-        int len = warriors.size();
-        for(int i = 0; i < len; i++){
-            int[] pos = warriors.poll();
-            if(medusa[0] == pos[0] && medusa[1] == pos[1]){
-                warriors.add(pos);
-                continue;
-            }
-
-            int originDist = getDistFromTo(pos, medusa);
-
-            PriorityQueue<int[]> pq = new PriorityQueue<>((o1, o2) -> {
-                if(o1[0] == o2[0]) return o1[1] - o2[1];
-                return o1[0] - o2[0];
-            });
-
-            warriorMap[pos[0]][pos[1]]--;
-
-            for(int j = 2; j < 6; j++){
-                int nr = pos[0] + dr[j % 4];
-                int nc = pos[1] + dc[j % 4];
-                if(nr < 0 || nr >= N || nc < 0 || nc >= N || medusaArea[medusaDir][nr][nc]) continue;
-                int dist = getDistFromTo(new int[]{nr, nc}, medusa);
-                if(originDist < dist) continue;
-
-                pq.add(new int[]{dist, j, nr, nc});
-            }
-
-            if(pq.isEmpty()){
-                warriorMap[pos[0]][pos[1]]++;
-                warriors.add(pos);
-                continue;
-            }
-
-            int[] result = pq.poll();
-            sum++;
-            warriors.add(new int[]{result[2], result[3]});
-
-            warriorMap[result[2]][result[3]]++;
-        }
-        
-        return sum;
+  for (Warrior& w : warrior_vec)
+  {
+    if (w.live == 0) continue;
+    if (visited[max_freeze_dir][w.y][w.x] == 1)
+    {
+      w.freeze = 1;
+      turn_info.warrior_freezed++;
     }
+  }
+}
 
-    private static int step4(){
-        int result = 0;
+int man_calc_dist(int y1, int x1, int y2, int x2)
+{
+  return abs(y1 - y2) + abs(x2 - x1);
+}
 
-        int len = warriors.size();
-        for(int i = 0; i < len; i++){
-            int[] pos = warriors.poll();
-            if(pos[0] == medusa[0] && pos[1] == medusa[1]){
-                result++;
-                warriorMap[pos[0]][pos[1]]--;
-                continue;
-            }
+vector<int> warrior_dir[2] = {
+  {0, 4, 6, 2}, // 상 하 좌 우
+  {6, 2, 0, 4} // 좌 우 상 하 
+};
 
-            warriors.add(pos);
-        }
-        
-        for(int i = 0; i < N; i++){
-            for(int j = 0; j < N; j++){
-                for(int k = 0; k < nxtWarriorMap[i][j]; k++){
-                    warriors.add(new int[]{i, j});
-                    warriorMap[i][j]++;
-                }
-
-                nxtWarriorMap[i][j] = 0;
-            }
-        }
-
-        return result;
+void warrior_move(int flag)
+{
+  // cout << "이동시작!!!" << endl;
+  // cout << " 메두사는 " << " : " << my << " : " << mx << endl;
+  for (Warrior& w : warrior_vec)
+  {
+    //cout << w.y << " : " << w.x << " : " << w.freeze << " :  " << w.live << endl;
+    if (w.live == 0) {
+      //cout << w.y << " : " << w.x << " 는 죽음" << endl;
+      continue;
     }
-
-    private static void input() throws IOException {
-        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-        StringTokenizer stk = new StringTokenizer(br.readLine());
-        N = Integer.parseInt(stk.nextToken());
-        M = Integer.parseInt(stk.nextToken());
-
-        map = new int[N][N];
-
-        // 메두사 집과 공원 좌표
-        stk = new StringTokenizer(br.readLine());
-        medusa[0] = Integer.parseInt(stk.nextToken());
-        medusa[1] = Integer.parseInt(stk.nextToken());
-        
-        park[0] = Integer.parseInt(stk.nextToken());
-        park[1] = Integer.parseInt(stk.nextToken());
-
-        // 전사 입력
-        warriorMap = new int[N][N];
-        nxtWarriorMap = new int[N][N];
-
-        stk = new StringTokenizer(br.readLine());
-        for(int i = 0; i < M; i++){
-            int r = Integer.parseInt(stk.nextToken());
-            int c = Integer.parseInt(stk.nextToken());
-
-            warriorMap[r][c]++;
-            warriors.add(new int[]{r,c});
-        }
-
-        // 도로 정보
-        for(int i = 0; i < N; i++){
-            stk = new StringTokenizer(br.readLine());
-            for(int j = 0; j < N; j++){
-                map[i][j] = Integer.parseInt(stk.nextToken());
-            }
-        }
+    if (w.freeze == 1)
+    {
+      //cout << w.y << " : " << w.x << " 는 얼어있음" << endl;
+      if(flag == 1) w.freeze = 0; 
+      continue;
     }
- 
-    private static int getDistFromTo(int[] from, int[] to){
-        return Math.abs(from[0] - to[0]) + Math.abs(from[1] - to[1]);
+    for (int i = 0; i < 4; i++)
+    {
+      int dir = warrior_dir[flag][i];
+      int ny = w.y + dy[dir];
+      int nx = w.x + dx[dir];
+      if (is_out(ny, nx) || 
+            visited[max_freeze_dir][ny][nx] == 1) continue;
+      if (man_calc_dist(ny, nx, my, mx) + 1 
+            == man_calc_dist(w.y, w.x, my, mx))
+      {
+        //cout << ny << " : " << nx << "로 이동.." << endl;
+        warrior_land[w.y][w.x]--;
+        w.y = ny;
+        w.x = nx;
+        turn_info.warrior_move_sum++;
+        warrior_land[w.y][w.x]++;
+        if (ny == my && nx == mx)
+        {
+          //cout << "장렬히 전사" << endl;
+          w.live = 0;
+          turn_info.warrior_attack_succeed++;
+          warrior_land[w.y][w.x]--;
+        }
+        break;
+      }
     }
+  }
+}
+
+int main()
+{
+  fastIO();
+  cin >> n >> m;
+  cin >> my >> mx >> py >> px;
+  for (int i = 0; i < m; i++)
+  {
+    int y, x;
+    cin >> y >> x;
+    warrior_vec.push_back({y, x, 0, 1});
+    warrior_land[y][x]++;
+  }
+  for (int i = 0; i < n; i++)
+  {
+    for (int j = 0; j < n; j++)
+    {
+      cin >> road[i][j];
+    }
+  }
+
+
+  int a = calc_dist();
+  if (a == -1)
+  {
+    cout << -1 << endl;
+    exit(0);
+  }
+
+  trace(my, mx);
+
+  int turn = 0;
+
+  while (1)
+  {
+    turn_info = {0, 0, 0};
+    medusa_move(turn); // 전사가 공격못하고 죽음
+    //cout << my << " : " << mx << endl;
+    if (my == py && mx == px)
+    {
+      cout << 0 << endl; return 0;
+    }
+    medusa_look(); // 전사를 얼림
+    warrior_move(0); // 전사가 첫 번째 이동: 공격 후 죽음
+    warrior_move(1); // 전사의 두 번째 이동: 공격 후 죽음
+    cout << turn_info.warrior_move_sum << " " 
+         << turn_info.warrior_freezed << " "
+         << turn_info.warrior_attack_succeed << endl;
+    turn++;
+  }
 }
