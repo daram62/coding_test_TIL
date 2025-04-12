@@ -13,7 +13,7 @@ int sum; // 행 번호 합
 pair <int, int> Center;
 
 void Print() {
-    for (int i = 1; i <= R+2; i++) {
+    for (int i = 1; i <= R+3; i++) {
         for (int j = 1; j <= C; j++) {
             cout << forest[i][j] << " ";
         }
@@ -23,7 +23,7 @@ void Print() {
 
 bool check_golem(int r, int c) {    
     // 범위 체크
-    if (r-1 < 1 || r+1 > R+2 || c-1 < 1 || c+1 > C) 
+    if (r-1 < 1 || r+1 > R+3 || c-1 < 1 || c+1 > C) 
         return false;
     // 비어있는지 체크
     if (forest[r][c] != 0 || forest[r-1][c] != 0 || forest[r+1][c] != 0 || forest[r][c-1] != 0 || forest[r][c+1] != 0)
@@ -34,7 +34,7 @@ bool check_golem(int r, int c) {
 
 void locate_golem(int c, int d, int n) {
     // 남 -> 서 -> 동 체크
-    int sR = 1;
+    int sR = 2;
     int sC = c;
 
     // 이동 방향 체크
@@ -90,7 +90,7 @@ void locate_golem(int c, int d, int n) {
 }
 
 bool isOut() {
-    for (int i = 0; i <= 2; i++) {
+    for (int i = 1; i <= 3; i++) {
         for (int j = 1; j <= C; j++) {
             if (forest[i][j] != 0)
                 return true;
@@ -100,8 +100,8 @@ bool isOut() {
 }
 
 void Clear() {
-    for (int i = 0; i <= R+2; i++) {
-        for (int j = 0; j <= C; j++) {
+    for (int i = 1; i <= R+3; i++) {
+        for (int j = 1; j <= C; j++) {
             forest[i][j] = 0;
             Exit[i][j] = 0;
         }
@@ -109,7 +109,7 @@ void Clear() {
 }
 
 bool isValid(int r, int c) {
-    return (r >= 1 && r <= R+2 && c >= 1 && c <= C);
+    return (r >= 1 && r <= R+3 && c >= 1 && c <= C);
 }
 
 void move_ghost(int y, int x, int num) {
@@ -159,7 +159,7 @@ void move_ghost(int y, int x, int num) {
             }
         }
     }
-    sum += max_y - 2;
+    sum += max_y - 3;
 }
 
 int main() {
