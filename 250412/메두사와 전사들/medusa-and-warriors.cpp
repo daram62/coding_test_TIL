@@ -1,9 +1,7 @@
 #include <iostream>
-#include <algorithm>
-#include <vector>
-#include <queue> 
-#include <cmath> 
-#include <cstring> 
+#include <queue>
+#include <cmath>
+#include <cstring>
 using namespace std;
 
 int N, M;
@@ -11,13 +9,14 @@ int map_[50][50];
 int warriorMap[50][50], nextWarriorMap[50][50];
 bool medusaArea[4][50][50];
 
-int dr[4] = {-1, 1, 0, 0}; // 상, 하, 좌, 우
+int dr[4] = {-1, 1, 0, 0};
 int dc[4] = {0, 0, -1, 1};
 
 int medusaR, medusaC;
 int parkR, parkC;
 
-queue<pair<int, int>> warriors;
+pair<int, int> warriorsQueue[10000];
+int frontIdx = 0, rearIdx = 0;
 
 int getDist(int r1, int c1, int r2, int c2) {
     return abs(r1 - r2) + abs(c1 - c2);
@@ -27,58 +26,75 @@ bool inRange(int r, int c) {
     return r >= 0 && r < N && c >= 0 && c < N;
 }
 
+void pushWarrior(int r, int c) {
+    warriorsQueue[rearIdx++] = {r, c};
+}
+
+bool popWarrior(int &r, int &c) {
+    if (frontIdx == rearIdx) return false;
+    tie(r, c) = warriorsQueue[frontIdx++];
+    return true;
+}
+
+void resetWarriorQueue(pair<int, int>* src, int count) {
+    for (int i = 0; i < count; i++) {
+        warriorsQueue[i] = src[i];
+    }
+    frontIdx = 0;
+    rearIdx = count;
+}
+
 bool step1(bool visited[50][50]) {
-    priority_queue<tuple<int, int, int, int>, vector<tuple<int, int, int, int>>, greater<>> pq;
+    int minDist = 1e9, chosenDir = -1, newR = -1, newC = -1;
 
     for (int d = 0; d < 4; d++) {
         int nr = medusaR + dr[d];
         int nc = medusaC + dc[d];
         if (!inRange(nr, nc) || visited[nr][nc] || map_[nr][nc] == 1) continue;
 
-        vector<vector<bool>> bfsVisited(N, vector<bool>(N, false));
+        bool bfsVisited[50][50] = {};
         queue<tuple<int, int, int>> q;
         q.push({0, nr, nc});
         bfsVisited[nr][nc] = true;
 
-        int dist = -1;
         while (!q.empty()) {
-            auto [d_, r, c] = q.front(); q.pop();
+            auto [dist, r, c] = q.front(); q.pop();
             if (r == parkR && c == parkC) {
-                dist = d_;
+                if (dist < minDist || (dist == minDist && d < chosenDir)) {
+                    minDist = dist;
+                    chosenDir = d;
+                    newR = nr;
+                    newC = nc;
+                }
                 break;
             }
             for (int i = 0; i < 4; i++) {
                 int rr = r + dr[i], cc = c + dc[i];
                 if (!inRange(rr, cc) || map_[rr][cc] == 1 || bfsVisited[rr][cc]) continue;
                 bfsVisited[rr][cc] = true;
-                q.push({d_ + 1, rr, cc});
+                q.push({dist + 1, rr, cc});
             }
         }
-
-        if (dist != -1) pq.push({dist, d, nr, nc});
     }
 
-    if (pq.empty()) {
+    if (chosenDir == -1) {
         cout << -1 << '\n';
         return false;
     }
 
-    auto [_, dir, nr, nc] = pq.top();
-    medusaR = nr;
-    medusaC = nc;
+    medusaR = newR;
+    medusaC = newC;
     visited[medusaR][medusaC] = true;
 
-    if (warriorMap[medusaR][medusaC] > 0) {
-        int sz = warriors.size();
-        queue<pair<int, int>> temp;
-        for (int i = 0; i < sz; i++) {
-            auto [r, c] = warriors.front(); warriors.pop();
-            if (r == medusaR && c == medusaC) continue;
-            temp.push({r, c});
-        }
-        warriors = temp;
-        warriorMap[medusaR][medusaC] = 0;
+    pair<int, int> temp[10000];
+    int cnt = 0;
+    for (int i = frontIdx; i < rearIdx; i++) {
+        auto [r, c] = warriorsQueue[i];
+        if (r == medusaR && c == medusaC) continue;
+        temp[cnt++] = {r, c};
     }
+    resetWarriorQueue(temp, cnt);
+    warriorMap[medusaR][medusaC] = 0;
 
     if (medusaR == parkR && medusaC == parkC) {
         cout << 0 << '\n';
@@ -90,7 +106,6 @@ bool step1(bool visited[50][50]) {
 
 pair<int, int> step2() {
     int maxKill = 0, dirChosen = 0;
-
     memset(medusaArea, false, sizeof(medusaArea));
 
     for (int d = 0; d < 4; d++) {
@@ -120,49 +135,37 @@ pair<int, int> step2() {
                 if (!inRange(r, c)) break;
 
                 if (d <= 1) {
-                    if (!left && c - j >= 0) {
-                        if (rock[c - j]) left = true;
-                        else {
-                            medusaArea[d][r][c - j] = true;
-                            if (warriorMap[r][c - j] > 0) {
-                                rock[c - j] = true;
-                                kill += warriorMap[r][c - j];
-                                left = true;
-                            }
+                    if (!left && c - j >= 0 && !rock[c - j]) {
+                        medusaArea[d][r][c - j] = true;
+                        if (warriorMap[r][c - j] > 0) {
+                            rock[c - j] = true;
+                            kill += warriorMap[r][c - j];
+                            left = true;
                         }
                     }
-                    if (!right && c + j < N) {
-                        if (rock[c + j]) right = true;
-                        else {
-                            medusaArea[d][r][c + j] = true;
-                            if (warriorMap[r][c + j] > 0) {
-                                rock[c + j] = true;
-                                kill += warriorMap[r][c + j];
-                                right = true;
-                            }
+                    if (!right && c + j < N && !rock[c + j]) {
+                        medusaArea[d][r][c + j] = true;
+                        if (warriorMap[r][c + j] > 0) {
+                            rock[c + j] = true;
+                            kill += warriorMap[r][c + j];
+                            right = true;
                         }
                     }
                 } else {
-                    if (!left && r - j >= 0) {
-                        if (rock[r - j]) left = true;
-                        else {
-                            medusaArea[d][r - j][c] = true;
-                            if (warriorMap[r - j][c] > 0) {
-                                rock[r - j] = true;
-                                kill += warriorMap[r - j][c];
-                                left = true;
-                            }
+                    if (!left && r - j >= 0 && !rock[r - j]) {
+                        medusaArea[d][r - j][c] = true;
+                        if (warriorMap[r - j][c] > 0) {
+                            rock[r - j] = true;
+                            kill += warriorMap[r - j][c];
+                            left = true;
                         }
                     }
-                    if (!right && r + j < N) {
-                        if (rock[r + j]) right = true;
-                        else {
-                            medusaArea[d][r + j][c] = true;
-                            if (warriorMap[r + j][c] > 0) {
-                                rock[r + j] = true;
-                                kill += warriorMap[r + j][c];
-                                right = true;
-                            }
+                    if (!right && r + j < N && !rock[r + j]) {
+                        medusaArea[d][r + j][c] = true;
+                        if (warriorMap[r + j][c] > 0) {
+                            rock[r + j] = true;
+                            kill += warriorMap[r + j][c];
+                            right = true;
                         }
                     }
                 }
@@ -189,72 +192,74 @@ pair<int, int> step2() {
 
 int step3(int turn, int medusaDir) {
     int sum = 0;
-    int sz = warriors.size();
-    queue<pair<int, int>> temp;
+    pair<int, int> temp[10000];
+    int cnt = 0;
 
-    for (int i = 0; i < sz; i++) {
-        auto [r, c] = warriors.front(); warriors.pop();
+    for (int i = frontIdx; i < rearIdx; i++) {
+        auto [r, c] = warriorsQueue[i];
         if (warriorMap[r][c] == 0 || (r == medusaR && c == medusaC)) {
-            temp.push({r, c});
+            temp[cnt++] = {r, c};
             continue;
         }
 
-        int originalDist = getDist(r, c, medusaR, medusaC);
+        int originDist = getDist(r, c, medusaR, medusaC);
         warriorMap[r][c]--;
 
-        vector<tuple<int, int, int, int>> candidates;
+        int bestDist = 1e9, bestDir = -1, nr = -1, nc = -1;
         for (int j = (turn == 1 ? 0 : 2); j < (turn == 1 ? 4 : 6); j++) {
             int d = j % 4;
-            int nr = r + dr[d], nc = c + dc[d];
-            if (!inRange(nr, nc) || medusaArea[medusaDir][nr][nc]) continue;
-            int newDist = getDist(nr, nc, medusaR, medusaC);
-            if (newDist >= originalDist) continue;
-            candidates.emplace_back(newDist, d, nr, nc);
+            int tr = r + dr[d], tc = c + dc[d];
+            if (!inRange(tr, tc) || medusaArea[medusaDir][tr][tc]) continue;
+            int newDist = getDist(tr, tc, medusaR, medusaC);
+            if (newDist < originDist) {
+                if (newDist < bestDist || (newDist == bestDist && d < bestDir)) {
+                    bestDist = newDist;
+                    bestDir = d;
+                    nr = tr;
+                    nc = tc;
+                }
+            }
         }
 
-        if (candidates.empty()) {
+        if (nr == -1) {
             warriorMap[r][c]++;
-            temp.push({r, c});
-            continue;
+            temp[cnt++] = {r, c};
+        } else {
+            warriorMap[nr][nc]++;
+            temp[cnt++] = {nr, nc};
+            sum++;
         }
-
-        sort(candidates.begin(), candidates.end());
-        auto [_, __, nr, nc] = candidates[0];
-        warriorMap[nr][nc]++;
-        temp.push({nr, nc});
-        sum++;
     }
 
-    warriors = temp;
+    resetWarriorQueue(temp, cnt);
     return sum;
 }
 
 int step4() {
     int atk = 0;
-    int sz = warriors.size();
-    queue<pair<int, int>> temp;
+    pair<int, int> temp[10000];
+    int cnt = 0;
 
-    for (int i = 0; i < sz; i++) {
-        auto [r, c] = warriors.front(); warriors.pop();
+    for (int i = frontIdx; i < rearIdx; i++) {
+        auto [r, c] = warriorsQueue[i];
         if (r == medusaR && c == medusaC) {
             atk++;
             warriorMap[r][c]--;
-            continue;
+        } else {
+            temp[cnt++] = {r, c};
         }
-        temp.push({r, c});
     }
 
     for (int r = 0; r < N; r++)
         for (int c = 0; c < N; c++) {
-            int count = nextWarriorMap[r][c];
-            while (count--) {
+            while (nextWarriorMap[r][c]--) {
                 warriorMap[r][c]++;
-                temp.push({r, c});
+                temp[cnt++] = {r, c};
             }
             nextWarriorMap[r][c] = 0;
         }
 
-    warriors = temp;
+    resetWarriorQueue(temp, cnt);
     return atk;
 }
 
@@ -268,7 +273,7 @@ int main() {
     for (int i = 0; i < M; i++) {
         int r, c;
         cin >> r >> c;
-        warriors.push({r, c});
+        pushWarrior(r, c);
         warriorMap[r][c]++;
     }
 
