@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <iostream>
 #include <queue>
+#include <cstring>
 using namespace std;
 
 // 방향: 동(0), 서(1), 남(2), 북(3)
