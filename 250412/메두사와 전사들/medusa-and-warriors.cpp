@@ -1,6 +1,5 @@
 #include <iostream>
 #include <algorithm>
-#include <vector>
 #include <queue> 
 #include <cmath> 
 #include <cstring> 
@@ -28,7 +27,7 @@ bool inRange(int r, int c) {
 }
 
 // step 1: 메두사 이동
-bool step1(vector<vector<bool>>& visited) {
+bool step1(bool visited[50][50]) {
     priority_queue<tuple<int, int, int, int>, vector<tuple<int, int, int, int>>, greater<>> pq;
 
     for (int d = 0; d < 4; d++) {
@@ -266,6 +265,7 @@ int main() {
     ios::sync_with_stdio(false);
     cin.tie(0);
 
+    // 0. 입력
     cin >> N >> M;
     cin >> medusaR >> medusaC >> parkR >> parkC;
 
@@ -280,7 +280,7 @@ int main() {
         for (int j = 0; j < N; j++)
             cin >> map_[i][j];
 
-    vector<vector<bool>> visited(N, vector<bool>(N, false));
+    bool visited[50][50] = {}; // 전역 or main 함수 안에 선언 가능
 
     while (!(medusaR == parkR && medusaC == parkC)) {
         if (!step1(visited)) break;
